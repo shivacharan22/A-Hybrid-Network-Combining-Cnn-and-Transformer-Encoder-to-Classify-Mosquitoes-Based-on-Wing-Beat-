@@ -122,6 +122,8 @@ class TransformerEncoder(nn.Module):
 
         return src
 
+TORCH_GLOBAL_SHARED_LAYER = make_conv_layers()
+
 class wavmosLit(pl.LightningModule):
     def __init__(
         self
