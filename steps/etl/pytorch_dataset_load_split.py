@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 from zenml import step
 from utils.custom_dataset import CustomImageDataset
+from sklearn.model_selection import StratifiedKFold
 
 @step
 def pytorch_dataset_load_split(

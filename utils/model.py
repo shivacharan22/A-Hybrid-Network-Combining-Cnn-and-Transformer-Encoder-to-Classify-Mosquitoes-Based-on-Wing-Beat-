@@ -1,4 +1,5 @@
-
+import torch
+import torch.nn as nn
 import torch.nn.functional as f
 import torchmetrics
 from torchmetrics.functional import accuracy
@@ -9,6 +10,69 @@ from torchmetrics import Precision
 from torchmetrics import Recall
 from torchmetrics import F1Score
 from torchmetrics import ConfusionMatrix
+from config import stopping_threshold
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
+
+class TransposeLast(nn.Module):
+    def __init__(self, deconstruct_idx=None):
+        super().__init__()
+        self.deconstruct_idx = deconstruct_idx
+
+    def forward(self, x):
+        if self.deconstruct_idx is not None:
+            x = x[self.deconstruct_idx]
+        return x.transpose(-2, -1)
+
+class Fp32LayerNorm(nn.LayerNorm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, input):
+        output = F.layer_norm(
+            input.float(),
+            self.normalized_shape,
+            self.weight.float() if self.weight is not None else None,
+            self.bias.float() if self.bias is not None else None,
+            self.eps,
+        )
+        return output.type_as(input)
+
+def conv_block(n_in, n_out, k, stride, conv_bias):
+  def spin_conv():
+    conv = nn.Conv1d(n_in, n_out, k, stride=stride, bias=conv_bias)
+    nn.init.kaiming_normal_(conv.weight)
+    return conv
+  return nn.Sequential(
+                    spin_conv(),
+                    nn.Dropout(p=0.1),
+                    nn.Sequential(
+                        TransposeLast(),
+                        Fp32LayerNorm(n_out, elementwise_affine=True),
+                        TransposeLast(),
+                    ),
+                    nn.GELU(),
+                )
+def make_conv_layers():
+        in_d = 1
+        conv_dim = [(256, 10, 5)] + [(256, 3, 2)]*4 + [(256,2,2)] + [(256,2,2)]
+        conv_layers = nn.ModuleList()
+        for i, cl in enumerate(conv_dim):
+            (dim, k, stride) = cl
+            conv_layers.append(
+                conv_block(
+                    in_d,
+                    dim,
+                    k,
+                    stride,
+                    conv_bias=False,
+                )
+            )
+            in_d = dim 
+        return conv_layers
 
 
 def scaled_dot_product_attention(query: Tensor, key: Tensor, value: Tensor) -> Tensor:
@@ -70,7 +134,6 @@ class Residual(nn.Module):
         # residual.  This matches the signature of 'MultiHeadAttention'.
         return self.norm(tensors[0] + self.dropout(self.sublayer(*tensors)))
 
-
 class TransformerEncoderLayer(nn.Module):
     def __init__(
         self,
@@ -96,6 +159,8 @@ class TransformerEncoderLayer(nn.Module):
         src = self.attention(src, src, src)
         return self.feed_forward(src)
 
+early_stopping = EarlyStopping('acc',patience=5,mode='max',stopping_threshold = stopping_threshold)
+loss_function = nn.CrossEntropyLoss()
 
 class TransformerEncoder(nn.Module):
     def __init__(
@@ -124,25 +189,26 @@ class TransformerEncoder(nn.Module):
 
 TORCH_GLOBAL_SHARED_LAYER = make_conv_layers()
 
+
 class wavmosLit(pl.LightningModule):
     def __init__(
         self
         ):
         super(wavmosLit, self).__init__()
-        self.precision_all = Precision()
-        self.precision_global = Precision(average='macro', num_classes=23)
-        self.precision_weighted = Precision(average='weighted', num_classes = 23)
-        self.precision_each = Precision(average='none', num_classes = 23)
+        self.precision_all = Precision(task="multiclass",num_classes=23)
+        self.precision_global = Precision(task="multiclass",average='macro', num_classes=23)
+        self.precision_weighted = Precision(task="multiclass",average='weighted', num_classes = 23)
+        self.precision_each = Precision(task="multiclass",average='none', num_classes = 23)
         
-        self.recall_all = Recall()
-        self.recall_global = Recall(average='macro', num_classes=23)
-        self.recall_weighted = Recall(average='weighted', num_classes = 23)
-        self.recall_each = Recall(average='none', num_classes = 23)
+        self.recall_all = Recall(task="multiclass",num_classes=23)
+        self.recall_global = Recall(task="multiclass",average='macro', num_classes=23)
+        self.recall_weighted = Recall(task="multiclass",average='weighted', num_classes = 23)
+        self.recall_each = Recall(task="multiclass",average='none', num_classes = 23)
         
-        self.f1 = F1Score(num_classes=23)
-        self.confmat = ConfusionMatrix(num_classes=23)
-        self.valid_acc = torchmetrics.Accuracy()
-        self.valid_acc_each =  torchmetrics.Accuracy(average='none', num_classes = 23)
+        self.f1 = F1Score(task="multiclass",num_classes=23)
+        self.confmat = ConfusionMatrix(task="multiclass",num_classes=23)
+        self.valid_acc = torchmetrics.Accuracy(task="multiclass",num_classes=23)
+        self.valid_acc_each =  torchmetrics.Accuracy(task="multiclass",average='none', num_classes = 23)
         
         self.inner_dim = 49
         self.encoder = TransformerEncoder()
@@ -278,3 +344,9 @@ class wavmosLit(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=2*(10**(-4)),capturable = True)
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60], gamma=0.1)
         return [optimizer], [scheduler]
+
+
+if __name__ == "__main__":
+    model = wavmosLit()
+    print(model)
+    print("Done")

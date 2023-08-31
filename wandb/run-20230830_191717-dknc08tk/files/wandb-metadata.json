@@ -1,0 +1,34 @@
+{
+    "os": "macOS-13.5-arm64-arm-64bit",
+    "python": "3.10.10",
+    "heartbeatAt": "2023-08-31T02:17:18.436049",
+    "startedAt": "2023-08-31T02:17:17.777287",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/Users/shiva/temp_op/l/A-Hybrid-Network-Combining-Cnn-and-Transformer-Encoder-to-Classify-Mosquitoes-Based-on-Wing-Beat-/run.py",
+    "codePath": "run.py",
+    "git": {
+        "remote": "https://github.com/shivacharan22/A-Hybrid-Network-Combining-Cnn-and-Transformer-Encoder-to-Classify-Mosquitoes-Based-on-Wing-Beat-.git",
+        "commit": "17078f331e8254eaea36ce5b9869438f492b140d"
+    },
+    "email": "orugantishivacharan@gmail.com",
+    "root": "/Users/shiva/temp_op/l/A-Hybrid-Network-Combining-Cnn-and-Transformer-Encoder-to-Classify-Mosquitoes-Based-on-Wing-Beat-",
+    "host": "orugantis-MacBook-Pro.local",
+    "username": "shiva",
+    "executable": "/Users/shiva/.pyenv/versions/IBW/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "disk": {
+        "total": 460.4317207336426,
+        "used": 8.873176574707031
+    },
+    "gpuapple": {
+        "type": "arm",
+        "vendor": "Apple"
+    },
+    "memory": {
+        "total": 24.0
+    }
+}
