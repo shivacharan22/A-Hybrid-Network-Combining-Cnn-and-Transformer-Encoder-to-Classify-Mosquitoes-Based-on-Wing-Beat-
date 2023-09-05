@@ -1,0 +1,5 @@
+zenml[server]
+torch
+pytorch_lightning
+torchmetrics
+sklearn
