@@ -364,7 +364,7 @@ class wavmosLit(pl.LightningModule):
             inner_dim: Dimension of the inner layers in the network.
             encoder: Transformer-based encoder network.
             last_layer: Final classification layer.
-        """
+    """
     
     def __init__(
         self
