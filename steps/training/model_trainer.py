@@ -20,12 +20,16 @@ def model_trainer(
     model: Annotated[torch.nn.Module, "model"],
     random_seed: Annotated[int, "random_seed"],
 ):
-    """ 
-        Training the model
-        Args:
-            dataset: The dataset
-            model: The model
-            random_seed: The random seed
+    """
+    Train the provided model using the dataset and save the trained model.
+
+    Args:
+        model (torch.nn.Module): The model to be trained.
+        random_seed (int): The random seed used for training.
+
+    Example:
+        model = make_model()
+        model_trainer(model, random_seed=42)
     """
     # Setting the seed
     #pl.utilities.seed.seed_everything(seed=random_seed, workers=True)
