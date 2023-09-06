@@ -12,13 +12,19 @@ def pytorch_dataset_load_split(
     dataset: Annotated[pd.DataFrame,"dataset"],
     K: Annotated[int,"k_folds"],
 ) -> Tuple[ Annotated[Dataset,"pytorch_dataset"], Dict[int, Annotated[pd.DataFrame,"fold_data"]]]:
-    """ 
-        Split the dataset into k_folds
-        Args:
-            dataset: The dataset
-        Returns:    
-            pytorch_dataset: The pytorch dataset
-            fold_data: The fold data
+     """
+    Split the dataset into K folds and create a PyTorch dataset.
+
+    Args:
+        dataset (pd.DataFrame): The dataset containing inputs and labels.
+        K (int): The number of folds for cross-validation.
+
+    Returns:
+        Tuple[Dataset, Dict[int, pd.DataFrame]]: A tuple containing the PyTorch dataset and a dictionary
+        with fold data.
+
+    Example:
+        pytorch_dataset, fold_data = pytorch_dataset_load_split(dataset, K=5)
     """
     # Creating the pytorch dataset
     try:
