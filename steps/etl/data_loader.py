@@ -11,12 +11,21 @@ artifact_store = Client().active_stack.artifact_store
 def data_loader(
     is_inference: Annotated[bool, "Is this a training or inference job?"]
 ) -> Tuple[Annotated[pd.DataFrame,"dataset"], Annotated[pd.DataFrame,"labels"]]:
-    """ Reads the dataset
-        Args:
-            is_inference: Is this a training or inference job?
-        Returns:    
-            dataset: The dataset
-            labels: The labels
+   """
+    Reads the dataset and prepares it for either training or inference.
+
+    Args:
+        is_inference (bool): Is this a training or inference job?
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the dataset and labels dataframes.
+
+    Raises:
+        FileNotFoundError: If the dataset file is not found in the specified path.
+
+    Example:
+        dataset, labels = data_loader(is_inference=False)  # Load data for training.
+        inference_data, _ = data_loader(is_inference=True)  # Load data for inference.
     """
     # Read the dataset
     try:
