@@ -18,6 +18,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class TransposeLast(nn.Module):
+    """
+    A module that transposes the last two dimensions of a tensor.
+
+    Args:
+        deconstruct_idx (Optional): An optional index for deconstructing the tensor.
+
+    Example:
+        transposer = TransposeLast()
+        x = torch.randn(3, 4, 5)  # Input tensor with shape (3, 4, 5)
+        y = transposer(x)  # Transposes the last two dimensions, resulting in shape (3, 5, 4)
+    """
     def __init__(self, deconstruct_idx=None):
         super().__init__()
         self.deconstruct_idx = deconstruct_idx
@@ -28,6 +39,18 @@ class TransposeLast(nn.Module):
         return x.transpose(-2, -1)
 
 class Fp32LayerNorm(nn.LayerNorm):
+    """
+    A custom LayerNorm module that applies layer normalization to input tensors.
+
+    Args:
+        *args: Variable length positional arguments.
+        **kwargs: Variable length keyword arguments.
+
+    Example:
+        layer_norm = Fp32LayerNorm(256)  # Layer normalization for tensors with 256 features
+        x = torch.randn(32, 256, 10)  # Input tensor
+        y = layer_norm(x)  # Applies layer normalization to 'x'
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -42,6 +65,22 @@ class Fp32LayerNorm(nn.LayerNorm):
         return output.type_as(input)
 
 def conv_block(n_in, n_out, k, stride, conv_bias):
+  """
+    Defines a convolutional block with optional dropout and layer normalization.
+
+    Args:
+        n_in (int): Number of input channels.
+        n_out (int): Number of output channels.
+        k (int): Kernel size for convolution.
+        stride (int): Stride for convolution.
+        conv_bias (bool): Whether to include bias in convolution.
+
+    Returns:
+        nn.Sequential: A sequential container of convolutional layers with dropout and layer normalization.
+
+    Example:
+        conv = conv_block(256, 512, 3, 1, conv_bias=True)  # Create a convolutional block.
+  """
   def spin_conv():
     conv = nn.Conv1d(n_in, n_out, k, stride=stride, bias=conv_bias)
     nn.init.kaiming_normal_(conv.weight)
@@ -57,6 +96,15 @@ def conv_block(n_in, n_out, k, stride, conv_bias):
                     nn.GELU(),
                 )
 def make_conv_layers():
+        """
+        Creates a sequence of convolutional layers with specified dimensions and parameters.
+    
+        Returns:
+            nn.ModuleList: A list of convolutional layers.
+    
+        Example:
+            conv_layers = make_conv_layers()  # Create convolutional layers according to specified dimensions.
+        """
         in_d = 1
         conv_dim = [(256, 10, 5)] + [(256, 3, 2)]*4 + [(256,2,2)] + [(256,2,2)]
         conv_layers = nn.ModuleList()
@@ -76,6 +124,20 @@ def make_conv_layers():
 
 
 def scaled_dot_product_attention(query: Tensor, key: Tensor, value: Tensor) -> Tensor:
+    """
+    Computes scaled dot-product attention.
+
+    Args:
+        query (Tensor): Query tensor.
+        key (Tensor): Key tensor.
+        value (Tensor): Value tensor.
+
+    Returns:
+        Tensor: Result of scaled dot-product attention.
+
+    Example:
+        attention_result = scaled_dot_product_attention(query, key, value)  # Calculate attention result.
+    """
     temp = query.bmm(key.transpose(1, 2))
     scale = query.size(-1) ** 0.5
     softmax = f.softmax(temp / scale, dim=-1)
@@ -84,6 +146,20 @@ def scaled_dot_product_attention(query: Tensor, key: Tensor, value: Tensor) -> T
 def position_encoding(
     seq_len: int, dim_model: int, device: torch.device = device,
 ) -> Tensor:
+    """
+    Computes positional encoding for transformer models.
+
+    Args:
+        seq_len (int): Length of the sequence.
+        dim_model (int): Dimension of the model.
+        device (torch.device): Device to perform computations (default: global 'device').
+
+    Returns:
+        Tensor: Positional encoding tensor.
+
+    Example:
+        pos_encoding = position_encoding(seq_len=10, dim_model=512)  # Generate positional encoding.
+    """
     pos = torch.arange(seq_len, dtype=torch.float, device=device).reshape(1, -1, 1)
     dim = torch.arange(dim_model, dtype=torch.float, device=device).reshape(1, 1, -1)
     phase = pos / (1e4 ** (dim // dim_model))
@@ -92,6 +168,19 @@ def position_encoding(
 
 
 def feed_forward(dim_input: int = 512, dim_feedforward: int = 2048) -> nn.Module:
+    """
+    Defines a feed-forward neural network layer.
+
+    Args:
+        dim_input (int): Input dimension.
+        dim_feedforward (int): Dimension of the feed-forward layer.
+
+    Returns:
+        nn.Module: Feed-forward neural network.
+
+    Example:
+        ffnn = feed_forward(dim_input=512, dim_feedforward=2048)  # Create a feed-forward layer.
+    """
     return nn.Sequential(
         nn.Linear(dim_input, dim_feedforward),
         nn.ReLU(),
@@ -99,6 +188,17 @@ def feed_forward(dim_input: int = 512, dim_feedforward: int = 2048) -> nn.Module
     )
 
 class AttentionHead(nn.Module):
+    """
+    A single attention head for multi-head attention.
+
+    Args:
+        dim_in (int): Input dimension.
+        dim_q (int): Dimension of query vectors.
+        dim_k (int): Dimension of key vectors.
+
+    Example:
+        attention_head = AttentionHead(dim_in=512, dim_q=64, dim_k=64)  # Create an attention head.
+    """
     def __init__(self, dim_in: int, dim_q: int, dim_k: int):
         super().__init__()
         self.q = nn.Linear(dim_in, dim_q)
@@ -110,6 +210,18 @@ class AttentionHead(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
+    """
+    Multi-head attention module.
+
+    Args:
+        num_heads (int): Number of attention heads.
+        dim_in (int): Input dimension.
+        dim_q (int): Dimension of query vectors.
+        dim_k (int): Dimension of key vectors.
+
+    Example:
+        multi_head_attention = MultiHeadAttention(num_heads=8, dim_in=512, dim_q=64, dim_k=64)  # Create a multi-head attention module.
+    """
     def __init__(self, num_heads: int, dim_in: int, dim_q: int, dim_k: int):
         super().__init__()
         self.heads = nn.ModuleList(
@@ -123,6 +235,17 @@ class MultiHeadAttention(nn.Module):
         )
 
 class Residual(nn.Module):
+    """
+    Residual connection with layer normalization and dropout.
+
+    Args:
+        sublayer (nn.Module): Sublayer to apply residual connection.
+        dimension (int): Dimension of the sublayer's output.
+        dropout (float): Dropout rate.
+
+    Example:
+        residual_layer = Residual(sublayer=feed_forward(), dimension=512, dropout=0.1)  # Create a residual layer.
+    """
     def __init__(self, sublayer: nn.Module, dimension: int, dropout: float = 0.1):
         super().__init__()
         self.sublayer = sublayer
@@ -135,6 +258,18 @@ class Residual(nn.Module):
         return self.norm(tensors[0] + self.dropout(self.sublayer(*tensors)))
 
 class TransformerEncoderLayer(nn.Module):
+    """
+    A single layer of the Transformer encoder.
+
+    Args:
+        dim_model (int): Model's dimension.
+        num_heads (int): Number of attention heads.
+        dim_feedforward (int): Dimension of the feed-forward layer.
+        dropout (float): Dropout rate.
+
+    Example:
+        encoder_layer = TransformerEncoderLayer(dim_model=512, num_heads=8, dim_feedforward=2048, dropout=0.1)  # Create a Transformer encoder layer.
+    """
     def __init__(
         self,
         dim_model: int = 512,
@@ -163,6 +298,19 @@ early_stopping = EarlyStopping('acc',patience=5,mode='max',stopping_threshold = 
 loss_function = nn.CrossEntropyLoss()
 
 class TransformerEncoder(nn.Module):
+     """
+    Transformer Encoder model.
+
+    Args:
+        num_layers (int): Number of encoder layers.
+        dim_model (int): Model's dimension.
+        num_heads (int): Number of attention heads.
+        dim_feedforward (int): Dimension of the feed-forward layer.
+        dropout (float): Dropout rate.
+
+    Example:
+        encoder = TransformerEncoder(num_layers=6, dim_model=512, num_heads=8, dim_feedforward=2048, dropout=0.1)  # Create a Transformer encoder model.
+    """
     def __init__(
         self,
         num_layers: int = 2,
@@ -191,6 +339,33 @@ TORCH_GLOBAL_SHARED_LAYER = make_conv_layers()
 
 
 class wavmosLit(pl.LightningModule):
+    """
+        Initialize the wavmosLit LightningModule.
+
+        This module defines a neural network for a classification task and includes
+        various metrics for evaluation during training and validation.
+
+        Attributes:
+            precision_all: Precision metric for all classes.
+            precision_global: Macro-averaged Precision metric.
+            precision_weighted: Weighted Precision metric.
+            precision_each: Precision metric for each class.
+
+            recall_all: Recall metric for all classes.
+            recall_global: Macro-averaged Recall metric.
+            recall_weighted: Weighted Recall metric.
+            recall_each: Recall metric for each class.
+
+            f1: F1 Score metric for all classes.
+            confmat: Confusion Matrix metric for all classes.
+            valid_acc: Accuracy metric for all classes.
+            valid_acc_each: Accuracy metric for each class.
+
+            inner_dim: Dimension of the inner layers in the network.
+            encoder: Transformer-based encoder network.
+            last_layer: Final classification layer.
+        """
+    
     def __init__(
         self
         ):
@@ -221,6 +396,15 @@ class wavmosLit(pl.LightningModule):
         self._output = None
 
     def forward(self, inputs):
+        """
+        Forward pass of the model.
+
+        Args:
+            inputs: Input data of shape (batch_size, input_dim).
+
+        Returns:
+            model_out: Predicted class probabilities of shape (batch_size, num_classes).
+        """
         self._output = inputs.unsqueeze(1)
         for conv in self._global_shared_layer:
              self._output = conv(self._output)
@@ -233,6 +417,16 @@ class wavmosLit(pl.LightningModule):
         return model_out
 
     def training_step(self, batch, batch_idx):
+        """
+        Training step.
+
+        Args:
+            batch: Batch of training data.
+            batch_idx: Index of the current batch.
+
+        Returns:
+            Dictionary containing the loss.
+        """
         inputs, targets = batch
         
         outputs = self(inputs)
@@ -242,6 +436,12 @@ class wavmosLit(pl.LightningModule):
         return {"loss": loss}
 
     def setup(self,stage = False):
+        """
+        Setup method to define the training and testing data.
+
+        Args:
+            stage: Indicates if setup is for training or testing.
+        """
 
         train_ids,test_ids = spilts[1] 
         self.training_data = CustomImageDataset(dataset)
@@ -249,20 +449,41 @@ class wavmosLit(pl.LightningModule):
         self.test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
 
     def train_dataloader(self):
-    
+        """
+        Training DataLoader definition.
+
+        Returns:
+            DataLoader for training data.
+        """
+        
         train_loader = torch.utils.data.DataLoader(
                       self.training_data, 
                       batch_size=64, sampler=self.train_subsampler,num_workers = 8,pin_memory=True)
         return train_loader
 
     def val_dataloader(self):
-    
+        """
+        Validation DataLoader definition.
+
+        Returns:
+            DataLoader for validation data.
+        """
         val_loader = torch.utils.data.DataLoader(
                       self.training_data,
                       batch_size=64, sampler=self.test_subsampler,num_workers = 8,pin_memory=True)
         return val_loader
     
     def validation_step(self, batch, batch_idx):
+        """
+        Validation step.
+
+        Args:
+            batch: Batch of validation data.
+            batch_idx: Index of the current batch.
+
+        Returns:
+            Dictionary containing validation loss.
+        """
         inputs, targets = batch
         
         outputs = self(inputs)
@@ -283,11 +504,23 @@ class wavmosLit(pl.LightningModule):
         return {"val_loss": loss}
     
     def training_epoch_end(self, training_step_outputs):
+        """
+        Training epoch end.
+
+        Args:
+            training_step_outputs: Outputs from all training steps in the epoch.
+        """
         avg_loss = torch.stack([x['loss'] for x in training_step_outputs]).mean()
         self.log("T_avg_loss", avg_loss,prog_bar = True)
         wandb.log({"T_avg_loss": avg_loss})
         
     def validation_epoch_end(self, outputs):
+        """
+        Validation epoch end.
+
+        Args:
+            outputs: Outputs from all validation steps in the epoch.
+        """
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
 
         self.log("val_loss",avg_loss,prog_bar=True)
