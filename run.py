@@ -16,9 +16,21 @@ def main(
 ):
     """Main entry point for the pipeline execution.
 
+    This function serves as the entry point for executing the pipeline. It allows you to
+    specify whether caching should be enabled or disabled for the pipeline run.
+
     Args:
-        no_cache: Whether to disable caching for the pipeline run.
-        
+        no_cache (bool, optional): Whether to disable caching for the pipeline run.
+            Defaults to False.
+
+    Example:
+        To run the pipeline with caching disabled, use the following command:
+        ```
+        main(no_cache=True)
+        ```
+
+    Returns:
+        None
     """
 
     # This executes all steps in the pipeline in the correct order using the orchestrator
