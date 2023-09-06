@@ -16,8 +16,19 @@ from zenml import pipeline
 )
 def training_pipeline():
     """
-        Training pipeline for the mosquito wingbeat dataset.
-        Args:
+    Training pipeline for the mosquito wingbeat dataset.
+
+    This pipeline includes the following steps:
+    1. Load and prepare the dataset for training and inference.
+    2. Split the dataset into K folds for cross-validation.
+    3. Create and initialize the model.
+    4. Train the model using the training data.
+    
+    Example:
+        training_pipeline()
+
+    Args:
+        None
     """
     dataset, inference_data = data_loader(is_inference)
     pytorch_dataset, spilts = pytorch_dataset_load_split(dataset,k_folds)
