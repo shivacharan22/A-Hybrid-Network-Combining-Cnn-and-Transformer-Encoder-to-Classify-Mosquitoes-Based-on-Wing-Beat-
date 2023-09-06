@@ -6,10 +6,14 @@ from zenml import step
 
 @step
 def make_model() -> Annotated[torch.nn.Module, "model"]:
-    """ 
-        Creating the model
-        Returns:    
-            model: The model
+    """
+    Create and initialize the model.
+
+    Returns:
+        torch.nn.Module: The initialized model.
+
+    Example:
+        model = make_model()
     """
     try:
         model = wavmosLit()
